@@ -1,0 +1,154 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#11140f">
+  <title>MathBrain AI — Maths Tutor</title>
+  <link rel="stylesheet" href="styles.css">
+  <style>
+    :root { color-scheme: dark; }
+    body { margin:0; min-height:100vh; background:var(--bg-primary,#11140f); color:var(--text-primary,#f0f1eb); font-family:var(--font-sans,Arial,sans-serif); }
+    .mb-shell { min-height:100vh; display:flex; flex-direction:column; }
+    .mb-topbar { height:68px; display:flex; align-items:center; justify-content:space-between; padding:0 28px; border-bottom:1px solid var(--border,#30352d); background:var(--bg-sidebar,#141713); }
+    .mb-brand { display:flex; align-items:center; gap:12px; font-size:18px; font-weight:700; letter-spacing:-.3px; }
+    .mb-logo { width:36px; height:36px; display:grid; place-items:center; border-radius:12px; background:#a8c98c22; font-size:21px; }
+    .mb-status { font-size:12px; color:var(--text-muted,#9aa093); display:flex; align-items:center; gap:8px; }
+    .mb-dot { width:8px; height:8px; border-radius:50%; background:#d69b55; }
+    .mb-dot.online { background:#83c58a; }
+    .mb-main { width:min(820px, calc(100% - 32px)); margin:0 auto; flex:1; display:flex; flex-direction:column; padding:38px 0 24px; }
+    .mb-welcome { text-align:center; margin:auto 0 28px; }
+    .mb-welcome h1 { font-size:clamp(27px,5vw,38px); margin:0 0 10px; letter-spacing:-1px; }
+    .mb-welcome p { margin:0; color:var(--text-secondary,#b8bdb2); line-height:1.6; }
+    .mb-examples { display:flex; flex-wrap:wrap; justify-content:center; gap:9px; margin-top:22px; }
+    .mb-chip { border:1px solid var(--border,#30352d); color:var(--text-secondary,#b8bdb2); background:var(--bg-secondary,#191c17); border-radius:999px; padding:9px 13px; cursor:pointer; font:inherit; font-size:13px; }
+    .mb-chip:hover { border-color:var(--accent,#a8c98c); color:var(--text-primary,#f0f1eb); }
+    .mb-chat { display:flex; flex-direction:column; gap:18px; padding:10px 0 24px; }
+    .mb-message { display:flex; gap:12px; align-items:flex-start; max-width:100%; }
+    .mb-message.user { justify-content:flex-end; }
+    .mb-avatar { flex:0 0 32px; height:32px; border-radius:11px; display:grid; place-items:center; background:#a8c98c22; }
+    .mb-bubble { max-width:min(680px, calc(100% - 48px)); padding:14px 17px; border:1px solid var(--border,#30352d); border-radius:16px; background:var(--bg-secondary,#191c17); line-height:1.65; white-space:pre-wrap; overflow-wrap:anywhere; }
+    .mb-message.user .mb-bubble { background:var(--user-bubble,#2d322b); border-color:transparent; }
+    .mb-compose-wrap { position:sticky; bottom:0; padding-top:12px; background:linear-gradient(transparent,var(--bg-primary,#11140f) 22%); }
+    .mb-compose { display:flex; align-items:flex-end; gap:10px; border:1px solid var(--border-light,#3e443c); background:var(--bg-input,#1c1f1a); border-radius:18px; padding:10px 12px 10px 17px; box-shadow:0 8px 28px #0003; }
+    .mb-compose textarea { flex:1; resize:none; min-height:28px; max-height:150px; border:0; outline:0; background:transparent; color:var(--text-primary,#f0f1eb); font:inherit; line-height:1.5; padding:5px 0; }
+    .mb-compose textarea::placeholder { color:var(--text-muted,#878f83); }
+    .mb-send { width:40px; height:40px; flex:0 0 40px; border:0; border-radius:12px; background:var(--accent,#a8c98c); color:#182016; font-size:19px; cursor:pointer; }
+    .mb-send:disabled { opacity:.4; cursor:not-allowed; }
+    .mb-note { text-align:center; color:var(--text-muted,#878f83); font-size:11px; margin:10px 0 0; }
+    .mb-error { color:#f0a3a3; font-size:13px; padding:8px 2px; }
+    @media(max-width:600px) { .mb-topbar{padding:0 16px}.mb-main{padding-top:25px}.mb-welcome{margin-top:30px}.mb-status{font-size:11px} }
+  </style>
+</head>
+<body>
+  <div class="mb-shell">
+    <header class="mb-topbar">
+      <div class="mb-brand"><span class="mb-logo">🧠</span><span>MathBrain AI</span></div>
+      <div class="mb-status"><span id="statusDot" class="mb-dot"></span><span id="statusText">Connecting to tutor…</span></div>
+    </header>
+    <main class="mb-main">
+      <section id="welcome" class="mb-welcome">
+        <h1>Let’s make maths click.</h1>
+        <p>Your friendly maths practice partner. Ask a question and we’ll work through it together.</p>
+        <div class="mb-examples">
+          <button class="mb-chip" data-question="What is 24 times 6?">✖ Multiplication</button>
+          <button class="mb-chip" data-question="What is 100 divided by 4?">➗ Division</button>
+          <button class="mb-chip" data-question="What is 20% of 50?">％ Percentages</button>
+          <button class="mb-chip" data-question="What is 1/2 + 1/4?">½ Fractions</button>
+          <button class="mb-chip" data-question="What is the area of rectangle 5 by 3?">▱ Geometry</button>
+        </div>
+      </section>
+      <section id="chat" class="mb-chat" aria-live="polite"></section>
+      <div class="mb-compose-wrap">
+        <form id="chatForm" class="mb-compose">
+          <textarea id="question" rows="1" maxlength="500" placeholder="Ask a maths question…" aria-label="Your maths question"></textarea>
+          <button id="send" class="mb-send" type="submit" aria-label="Send question" disabled>↑</button>
+        </form>
+        <p class="mb-note">MathBrain is a learning project. Check important answers with a teacher or trusted adult.</p>
+        <div id="error" class="mb-error" role="alert" hidden></div>
+      </div>
+    </main>
+  </div>
+  <script>
+    const API = 'http://127.0.0.1:8000';
+    const form = document.getElementById('chatForm');
+    const input = document.getElementById('question');
+    const send = document.getElementById('send');
+    const chat = document.getElementById('chat');
+    const welcome = document.getElementById('welcome');
+    const errorBox = document.getElementById('error');
+    const statusDot = document.getElementById('statusDot');
+    const statusText = document.getElementById('statusText');
+    let history = [];
+
+    function addMessage(text, who) {
+      const row = document.createElement('div');
+      row.className = 'mb-message ' + who;
+      if (who === 'assistant') {
+        const avatar = document.createElement('div');
+        avatar.className = 'mb-avatar'; avatar.textContent = '🧠'; row.appendChild(avatar);
+      }
+      const bubble = document.createElement('div');
+      bubble.className = 'mb-bubble';
+      // Render **bold** safely without injecting HTML.
+      const parts = String(text).split(/(\*\*[^*]+\*\*)/g);
+      for (const part of parts) {
+        if (part.startsWith('**') && part.endsWith('**')) {
+          const strong = document.createElement('strong');
+          strong.textContent = part.slice(2, -2); bubble.appendChild(strong);
+        } else bubble.appendChild(document.createTextNode(part));
+      }
+      row.appendChild(bubble); chat.appendChild(row);
+      row.scrollIntoView({ behavior: 'smooth', block: 'end' });
+    }
+
+    async function checkHealth() {
+      try {
+        const response = await fetch(API + '/api/health');
+        if (!response.ok) throw new Error('API unavailable');
+        const data = await response.json();
+        statusDot.classList.add('online'); statusText.textContent = data.name + ' connected';
+      } catch (_) {
+        statusDot.classList.remove('online'); statusText.textContent = 'Tutor offline — start the API';
+      }
+    }
+
+    input.addEventListener('input', () => {
+      send.disabled = !input.value.trim();
+      input.style.height = 'auto'; input.style.height = Math.min(input.scrollHeight, 150) + 'px';
+    });
+    input.addEventListener('keydown', event => {
+      if (event.key === 'Enter' && !event.shiftKey) { event.preventDefault(); form.requestSubmit(); }
+    });
+    document.querySelectorAll('[data-question]').forEach(button => {
+      button.addEventListener('click', () => { input.value = button.dataset.question; input.dispatchEvent(new Event('input')); form.requestSubmit(); });
+    });
+    form.addEventListener('submit', async event => {
+      event.preventDefault();
+      const message = input.value.trim();
+      if (!message || send.disabled) return;
+      errorBox.hidden = true; welcome.hidden = true;
+      addMessage(message, 'user');
+      input.value = ''; input.style.height = 'auto'; send.disabled = true; send.textContent = '…';
+      try {
+        const response = await fetch(API + '/api/chat', {
+          method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ message, history })
+        });
+        if (!response.ok) throw new Error('The tutor returned an error (' + response.status + ').');
+        const data = await response.json();
+        addMessage(data.reply || 'I could not create a reply. Please try again.', 'assistant');
+        history.push({ role: 'user', content: message }, { role: 'assistant', content: data.reply || '' });
+        history = history.slice(-8);
+      } catch (error) {
+        errorBox.textContent = 'Could not reach MathBrain. Check that the API is running at http://127.0.0.1:8000. ' + error.message;
+        errorBox.hidden = false;
+      } finally {
+        send.textContent = '↑'; send.disabled = !input.value.trim(); input.focus();
+      }
+    });
+    checkHealth();
+    setInterval(checkHealth, 15000);
+  </script>
+</body>
+</html>
